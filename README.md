@@ -19,8 +19,7 @@ To add a command:
 
 ### kernal/ - hosts OS kernal and backend processes
 
-
-Maintained By:
-Jacob 
-Dominique
-Kyle
+## Maintained By:
+1. Kyle (kgm78)
+2. Dominique (TosnEula)
+3. Jacob (Thaxes)
