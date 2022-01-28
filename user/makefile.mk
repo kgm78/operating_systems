@@ -20,6 +20,7 @@ USER_PROGS := \
 	kyle\
 	kyle2\
 	testingPartA\
+	testingPartA2\
         testingPartB\
         zombie
 
