@@ -25,4 +25,6 @@
 #define SYS_uptime 21
 #define SYS_partA  22
 #define SYS_partB  23
+#define SYS_getpinfo 24
+#define SYS_settickets	25
 #endif // _SYSCALL_H_
