@@ -21,8 +21,10 @@ USER_PROGS := \
 	kyle2\
 	testingPartA\
 	testingPartA2\
-        testingPartB\
-        zombie
+    testingPartB\
+	readingpstat\
+	tickettest\
+    zombie
 
 USER_PROGS := $(addprefix user/, $(USER_PROGS))
 
