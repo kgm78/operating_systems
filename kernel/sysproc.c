@@ -5,7 +5,6 @@
 #include "mmu.h"
 #include "proc.h"
 #include "sysfunc.h"
-#include "pstat.h"
 
 int partAcount = 0;
 extern int totalSys;
@@ -15,24 +14,6 @@ sys_fork(void)
 {
   return fork();
 }
-
-int
-sys_settickets(void)
-{
-	int mytickets;
-	if (argint(0, &mytickets) < 0)
-	{
-		return -1;
-	}
-	else
-	{
-		return settickets(mytickets); //assign tickets big implementation is in proc.c
-	}
-	
-	
-	
-}
-
 
 int
 sys_exit(void)
@@ -87,25 +68,6 @@ sys_sbrk(void)
   if(growproc(n) < 0)
     return -1;
   return addr;
-}
-
-int
-sys_getpinfo(void)
-{
- struct pstat *pTable; //Pointer to the table 
- if(argptr(0, (void *)&pTable, sizeof(*pTable)) < 0)
- 	{
-	 return -1; //validation
-	}
- if(pTable == NULL) 
- 	{
-		return -1; //validation
- 	}
-
- 	//pTable = Null;
-	//unsigned int number = (unsigned int)&pTable;
- getpinfo(pTable);	//call the getpinfo() in proc.c
- return 0;
 }
 
 int
