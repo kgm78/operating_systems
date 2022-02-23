@@ -5,6 +5,20 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "pstat.h"
+
+#define SCHRAND_MAX ((1U << 31) - 1)
+#define SCHRAND_MULT 214013
+#define SCHRAND_CONST 2541011
+
+//Pseudo-random number generator made from a linear congruential generator
+
+int rseed= 707606505;
+
+int rand(void)
+{
+	return rseed = (rseed * SCHRAND_MULT + SCHRAND_CONST) % SCHRAND_MAX;
+}
 
 struct {
   struct spinlock lock;
@@ -45,6 +59,8 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->numTicks = 0; //number of times the scheduler int the CPU = 0
+  p->numTickets = 10;
   release(&ptable.lock);
 
   // Allocate kernel stack if possible.
@@ -152,6 +168,9 @@ fork(void)
     if(proc->ofile[i])
       np->ofile[i] = filedup(proc->ofile[i]);
   np->cwd = idup(proc->cwd);
+  
+  
+  np->numTickets = proc->numTickets; //Child inherits the tickets from the parent
  
   pid = np->pid;
   np->state = RUNNABLE;
@@ -256,34 +275,108 @@ void
 scheduler(void)
 {
   struct proc *p;
-
   for(;;){
+	  
+	int totaltickets=0;
+	int counter=0;
+	int winner=0;
+
+  
     // Enable interrupts on this processor.
     sti();
-
-    // Loop over process table looking for process to run.
+	winner++;
+	counter++;
+	// Loop over process table looking for process to run.
     acquire(&ptable.lock);
+
+	//Counts the amount of tickets within the array that are runnable
+	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+	{
+		if (p->state == RUNNABLE)
+		{
+			totaltickets += p->numTickets;
+		}
+	}
+	
+	if(totaltickets > 0)
+	{
+		//picks one of the processes as a winner using the rand function
+		winner = rand() % totaltickets + 1; 
+	}
+
+	
+
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
-        continue;
-
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-      proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
-      swtch(&cpu->scheduler, proc->context);
-      switchkvm();
-
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      proc = 0;
+	  {
+		  continue;
+	  }
+	  if(p->state == RUNNABLE && counter < winner)
+	  {
+		//update counter
+		counter += p-> numTickets;
+		continue;
+	  }
+	  if (p->state == RUNNABLE && counter >= winner)
+	  {
+		proc = p;
+		switchuvm(p);
+		p->state = RUNNING;
+		p->numTicks = p->numTicks + 1;
+		swtch(&cpu->scheduler, proc->context);
+		switchkvm();
+		proc = 0;
+		break;
+	  }
     }
     release(&ptable.lock);
 
   }
 }
+
+int settickets(int passTickets)
+{
+	if(passTickets < 1)
+	{
+		return -1;
+	}
+	
+	proc->numTickets = passTickets;
+	return 0;
+}
+
+
+
+int getpinfo(struct pstat* LaTable) //create a pointer able to point to object
+{
+	struct proc *p; //Create a pointer able to point to objects of the type proc
+	int i = 0; //used to iterate through the slots of the arrays in pstat*
+	acquire(&ptable.lock);	//Lock the ptable(array containing the process)
+	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) //Use p to iterate through the list of processes
+	{
+		if(p->state == ZOMBIE || p->state == EMBRYO) //Check the state of a process
+		{
+			continue;
+		}
+		if(p->state == UNUSED)
+		{
+			LaTable->inuse[i] = 0;
+		}
+		else
+		{
+			LaTable->inuse[i] = 1;
+		}
+		LaTable->pid[i] = p->pid;	//With the pid of the process p->
+		LaTable->tickets[i] = p->numTickets; //With the number of tickets
+		LaTable->ticks[i] = p->numTicks;  //with the number of time the process has run
+		i++;
+	}
+	
+	release(&ptable.lock);
+	return 0;
+	
+}
+
 
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state.
