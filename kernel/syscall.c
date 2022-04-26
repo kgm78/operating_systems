@@ -7,12 +7,13 @@
 #include "syscall.h"
 #include "sysfunc.h"
 
-int totalSys= 0;
 // User code makes a system call with INT T_SYSCALL.
 // System call number in %eax.
 // Arguments on the stack, from the user call to the C
 // library system call function. The saved user %esp points
 // to a saved program counter, and then the first argument.
+
+extern int sys_cluis(void);
 
 // Fetch the int at addr from process p.
 int
@@ -20,6 +21,8 @@ fetchint(struct proc *p, uint addr, int *ip)
 {
   if(addr >= p->sz || addr+4 > p->sz)
     return -1;
+  if(p->pid > 1 && addr< 4096)
+	return -1;
   *ip = *(int*)(addr);
   return 0;
 }
@@ -34,6 +37,8 @@ fetchstr(struct proc *p, uint addr, char **pp)
 
   if(addr >= p->sz)
     return -1;
+  if(p->pid > 1 && addr < 4096)
+	return -1;
   *pp = (char*)addr;
   ep = (char*)p->sz;
   for(s = *pp; s < ep; s++)
@@ -59,7 +64,7 @@ argptr(int n, char **pp, int size)
   
   if(argint(n, &i) < 0)
     return -1;
-  if((uint)i >= proc->sz || (uint)i+size > proc->sz)
+  if((uint)i >= proc->sz || (uint)i+size > proc->sz || (uint)i < 4096)
     return -1;
   *pp = (char*)i;
   return 0;
@@ -104,10 +109,7 @@ static int (*syscalls[])(void) = {
 [SYS_wait]    sys_wait,
 [SYS_write]   sys_write,
 [SYS_uptime]  sys_uptime,
-[SYS_partA]   sys_partA,
-[SYS_partB]   sys_partB,
-[SYS_getpinfo]	sys_getpinfo,
-[SYS_settickets] sys_settickets,
+[SYS_cluis]   sys_cluis,
 };
 
 // Called on a syscall trap. Checks that the syscall number (passed via eax)
@@ -120,7 +122,6 @@ syscall(void)
   num = proc->tf->eax;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num] != NULL) {
     proc->tf->eax = syscalls[num]();
-    totalSys += 1;
   } else {
     cprintf("%d %s: unknown sys call %d\n",
             proc->pid, proc->name, num);
