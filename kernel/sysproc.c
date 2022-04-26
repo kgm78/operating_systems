@@ -5,10 +5,8 @@
 #include "mmu.h"
 #include "proc.h"
 #include "sysfunc.h"
-#include "pstat.h"
 
-int partAcount = 0;
-extern int totalSys;
+int counter=0;
 
 int
 sys_fork(void)
@@ -16,26 +14,46 @@ sys_fork(void)
   return fork();
 }
 
-int
-sys_settickets(void)
-{
-	int mytickets;
-	if (argint(0, &mytickets) < 0)
-	{
-		return -1;
-	}
-	else
-	{
-		return settickets(mytickets); //assign tickets big implementation is in proc.c
-	}
-	
-	
-	
-}
+//////////// your code here  /////////////////////////////////////////////////////////////////////////////////////////////////////
+/////we use this system call for changing the number of tickets of some process
+/////remember by default every process has just 1 ticket.
+///  because you are calling assigntickets(ticketsGotIt) which is define in proc.c you have to update defs.h with this new system call
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// HERE THE PROTOTYPE
+//int sys_assigntickets(void)
+//{
+//	int ticketsGotIt
+//	if (argint(0, &ticketsGotIt) < 0)  //this is the way to pass an integer as a parameters in sysproc.c, will pass this tickets in the experiment
+//	{
+//		return -1;  //validation line	
+//	}
+//	else{
+//		return assigntickets(ticketsGotIt); //assigntickets big implementation is in pro.c
+//	}
+//}
+//////////// your code here  /////////////////////////////////////////////////////////////////////////////////////////////////////
+/////we use this system call for filling out the arrays of pstat data structure
+/////So, remember to include here the pstat.h header file 
+///  because you are calling assigntickets(ticketsGotIt) which is define in proc.c you have to update defs.h with this new system call
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-int
+//int sys_saveData(void)
+//{
+//	struct pstat *pTable; //create a pointer able to point to objects of the type pstat//
+//	if(argptr(0, (void *)&pTable, sizeof(*pTable)) < 0){ //this is the way to pass a pointer to an object as a parameter in sysproc.c, will pass this tickets in the experiment
+//		return -1;  //validation
+//	}
+//	if(pInfo == NULL){  //validation 
+//		return -1;
+//	}			
+//	saveData(pTable);  //call the getpinf() in proc.c 		
+//	return 0;
+//}
+//////////////////////////////////////////////////////
+	
+	int
 sys_exit(void)
+	
 {
   exit();
   return 0;  // not reached
@@ -56,25 +74,19 @@ sys_kill(void)
     return -1;
   return kill(pid);
 }
+int
+sys_cluis(void)
+{
+  return counter;
+}
 
 int
 sys_getpid(void)
-{
-  partAcount = partAcount + 1;
+{ 
+  counter = counter +1;
   return proc->pid;
 }
 
-int
-sys_partA(void)
-{
- return partAcount;
-}
-
-int 
-sys_partB(void)
-{
- return totalSys;
-}
 int
 sys_sbrk(void)
 {
@@ -87,25 +99,6 @@ sys_sbrk(void)
   if(growproc(n) < 0)
     return -1;
   return addr;
-}
-
-int
-sys_getpinfo(void)
-{
- struct pstat *pTable; //Pointer to the table 
- if(argptr(0, (void *)&pTable, sizeof(*pTable)) < 0)
- 	{
-	 return -1; //validation
-	}
- if(pTable == NULL) 
- 	{
-		return -1; //validation
- 	}
-
- 	//pTable = Null;
-	//unsigned int number = (unsigned int)&pTable;
- getpinfo(pTable);	//call the getpinfo() in proc.c
- return 0;
 }
 
 int
